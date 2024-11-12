@@ -1,0 +1,2 @@
+ - TODO: implement wider support for redis commands (https://redis.io/docs/latest/commands/)
+ - TODO: implement TTL
