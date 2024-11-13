@@ -11,6 +11,7 @@ var Handlers = map[string]func([]Value) Value{
 	"COMMAND": command,
 	"PING":    ping,
 	"SET":     set,
+	"APPEND":  append_set,
 	"GET":     get,
 	"HSET":    hset,
 	"HGET":    hget,
@@ -42,6 +43,21 @@ func set(args []Value) Value {
 
 	SETsMu.Lock()
 	SETs[key] = value
+	SETsMu.Unlock()
+
+	return Value{typ: "string", str: "OK"}
+}
+
+func append_set(args []Value) Value {
+	if len(args) != 2 {
+		return Value{typ: "error", str: "Err: SET requires 2 arguments"}
+	}
+
+	key := args[0].bulk
+	value := args[1].bulk
+
+	SETsMu.Lock()
+	SETs[key] = SETs[key] + value
 	SETsMu.Unlock()
 
 	return Value{typ: "string", str: "OK"}
