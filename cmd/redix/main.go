@@ -80,7 +80,7 @@ func main() {
 			continue
 		}
 
-		if command == "SET" || command == "HSET" {
+		if command == "SET" || command == "HSET" || command == "APPEND" {
 			aof.Write(val)
 		}
 
