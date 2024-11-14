@@ -11,6 +11,7 @@ var Handlers = map[string]func([]Value) Value{
 	"APPEND":  append_set,
 	"COMMAND": command,
 	"GET":     get,
+	"GETDEL":  getdel,
 	"EXISTS":  exists,
 	"HSET":    hset,
 	"HGET":    hget,
@@ -76,8 +77,28 @@ func get(args []Value) Value {
 	SETsMu.RUnlock()
 
 	if !ok {
-		return Value{typ: "error", str: fmt.Sprintf("'%s' not found", key)}
+		return Value{typ: "null"}
 	}
+
+	return Value{typ: "string", str: value}
+}
+
+func getdel(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "GET requires 1 argument (key)"}
+	}
+
+	key := args[0].bulk
+	var value string
+
+	SETsMu.Lock()
+	if val, ok := SETs[key]; ok {
+		value = val
+		delete(SETs, key)
+	} else {
+		return Value{typ: "null"}
+	}
+	SETsMu.Unlock()
 
 	return Value{typ: "string", str: value}
 }
