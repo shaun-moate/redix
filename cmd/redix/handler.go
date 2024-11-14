@@ -8,14 +8,15 @@ import (
 // handlers for setting accepted commands
 
 var Handlers = map[string]func([]Value) Value{
-	"COMMAND": command,
-	"PING":    ping,
-	"SET":     set,
 	"APPEND":  append_set,
+	"COMMAND": command,
 	"GET":     get,
+	"EXISTS":  exists,
 	"HSET":    hset,
 	"HGET":    hget,
 	"HGETALL": hgetall,
+	"SET":     set,
+	"PING":    ping,
 }
 
 func command(args []Value) Value {
@@ -24,7 +25,7 @@ func command(args []Value) Value {
 
 func ping(args []Value) Value {
 	if len(args) > 0 {
-		return Value{typ: "error", str: "Err: PING only takes 0 arguments"}
+		return Value{typ: "error", str: "PING takes no arguments"}
 	}
 
 	return Value{typ: "string", str: "PONG"}
@@ -35,7 +36,7 @@ var SETsMu = sync.RWMutex{}
 
 func set(args []Value) Value {
 	if len(args) != 2 {
-		return Value{typ: "error", str: "Err: SET requires 2 arguments"}
+		return Value{typ: "error", str: "SET requires 2 arguments (key and value)"}
 	}
 
 	key := args[0].bulk
@@ -50,7 +51,7 @@ func set(args []Value) Value {
 
 func append_set(args []Value) Value {
 	if len(args) != 2 {
-		return Value{typ: "error", str: "Err: SET requires 2 arguments"}
+		return Value{typ: "error", str: "SET requires 2 arguments (key and value)"}
 	}
 
 	key := args[0].bulk
@@ -65,7 +66,7 @@ func append_set(args []Value) Value {
 
 func get(args []Value) Value {
 	if len(args) != 1 {
-		return Value{typ: "error", str: "Err: GET requires 1 argument (the key)"}
+		return Value{typ: "error", str: "GET requires 1 argument (key)"}
 	}
 
 	key := args[0].bulk
@@ -75,10 +76,24 @@ func get(args []Value) Value {
 	SETsMu.RUnlock()
 
 	if !ok {
-		return Value{typ: "error", str: "Err: Key not found"}
+		return Value{typ: "error", str: fmt.Sprintf("'%s' not found", key)}
 	}
 
 	return Value{typ: "string", str: value}
+}
+
+func exists(args []Value) Value {
+	var count int
+
+	SETsMu.RLock()
+	for i := 0; i < len(args); i++ {
+		if _, ok := SETs[args[i].bulk]; ok {
+			count++
+		}
+	}
+	SETsMu.RUnlock()
+
+	return Value{typ: "integer", int: count}
 }
 
 var HSETs = map[string]map[string]string{}
@@ -86,7 +101,7 @@ var HSETsMu = sync.RWMutex{}
 
 func hset(args []Value) Value {
 	if len(args) != 3 {
-		return Value{typ: "error", str: "Err: HSET requires 3 arguments"}
+		return Value{typ: "error", str: "HSET requires 3 arguments (hash, key, value)"}
 	}
 
 	hash := args[0].bulk
@@ -105,7 +120,7 @@ func hset(args []Value) Value {
 
 func hget(args []Value) Value {
 	if len(args) != 2 {
-		return Value{typ: "error", str: "Err: HGET requires 2 arguments"}
+		return Value{typ: "error", str: "HGET requires 2 arguments (hash and key)"}
 	}
 
 	hash := args[0].bulk
@@ -116,7 +131,7 @@ func hget(args []Value) Value {
 	HSETsMu.RUnlock()
 
 	if !ok {
-		return Value{typ: "error", str: fmt.Sprintf("%s not found", key)}
+		return Value{typ: "error", str: fmt.Sprintf("'%s'/'%s' not found", hash, key)}
 	}
 
 	return Value{typ: "bulk", bulk: value}
@@ -124,7 +139,7 @@ func hget(args []Value) Value {
 
 func hgetall(args []Value) Value {
 	if len(args) != 1 {
-		return Value{typ: "error", str: "Err: HGETALL requires 1 argument"}
+		return Value{typ: "error", str: "HGETALL requires 1 argument (hash)"}
 	}
 
 	hash := args[0].bulk

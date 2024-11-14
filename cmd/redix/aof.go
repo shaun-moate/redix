@@ -47,6 +47,15 @@ func (aof *Aof) Close() error {
 	return aof.file.Close()
 }
 
+func isWriteCommand(command string) bool {
+	switch command {
+	case "SET", "APPEND", "HSET":
+		return true
+	default:
+		return false
+	}
+}
+
 func (aof *Aof) Write(value Value) error {
 	aof.mu.Lock()
 	defer aof.mu.Unlock()

@@ -20,10 +20,11 @@ const (
 
 // struct for serialization and deserialization process
 type Value struct {
-	typ   string
-	str   string
-	bulk  string
 	array []Value
+	bulk  string
+	int   int
+	str   string
+	typ   string
 }
 
 type Resp struct {
