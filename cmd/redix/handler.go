@@ -5,19 +5,33 @@ import (
 	"sync"
 )
 
-// handlers for setting accepted commands
+// handlers for setting accepted commands (https://redis.io/docs/latest/commands/)
 
 var Handlers = map[string]func([]Value) Value{
 	"APPEND":  append_set,
 	"COMMAND": command,
-	"GET":     get,
-	"GETDEL":  getdel,
-	"EXISTS":  exists,
+	// "DECR": decr,
+	// "DECRBY": decrby,
+	"DEL":    del,
+	"GET":    get,
+	"GETDEL": getdel,
+	// "GETRANGE": getrange,
+	// "ECHO":    echo,
+	"EXISTS": exists,
+	// "HDEL":    hdel,
+	// "HEXISTS": hexists,
 	"HSET":    hset,
 	"HGET":    hget,
 	"HGETALL": hgetall,
-	"SET":     set,
-	"PING":    ping,
+	// "HINCRBY": hincrby,
+	// "HKEYS":   hkeys,
+	// "HSTRLEN": hstrlen,
+	// "INCR":    incr,
+	// "INCRBY":  incrby,
+	// "KEYS": keys,
+	// "RENAME": rename,
+	"SET":  set,
+	"PING": ping,
 }
 
 func command(args []Value) Value {
@@ -101,6 +115,22 @@ func getdel(args []Value) Value {
 	SETsMu.Unlock()
 
 	return Value{typ: "string", str: value}
+}
+
+func del(args []Value) Value {
+	var count int
+
+	SETsMu.Lock()
+	for i := 0; i < len(args); i++ {
+		key := args[i].bulk
+		if _, ok := SETs[key]; ok {
+			delete(SETs, key)
+			count++
+		}
+	}
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: count}
 }
 
 func exists(args []Value) Value {
