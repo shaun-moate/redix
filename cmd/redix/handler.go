@@ -16,7 +16,7 @@ var Handlers = map[string]func([]Value) Value{
 	"GET":    get,
 	"GETDEL": getdel,
 	// "GETRANGE": getrange,
-	// "ECHO":    echo,
+	"ECHO":   echo,
 	"EXISTS": exists,
 	// "HDEL":    hdel,
 	// "HEXISTS": hexists,
@@ -44,6 +44,14 @@ func ping(args []Value) Value {
 	}
 
 	return Value{typ: "string", str: "PONG"}
+}
+
+func echo(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "ECHO takes 1 argument"}
+	}
+
+	return Value{typ: "string", str: args[0].bulk}
 }
 
 var SETs = map[string]string{}
