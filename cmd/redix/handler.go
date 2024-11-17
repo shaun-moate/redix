@@ -29,9 +29,9 @@ var Handlers = map[string]func([]Value) Value{
 	// "INCR":    incr,
 	// "INCRBY":  incrby,
 	// "KEYS": keys,
-	// "RENAME": rename,
-	"SET":  set,
-	"PING": ping,
+	"RENAME": rename,
+	"SET":    set,
+	"PING":   ping,
 }
 
 func command(args []Value) Value {
@@ -56,6 +56,22 @@ func echo(args []Value) Value {
 
 var SETs = map[string]string{}
 var SETsMu = sync.RWMutex{}
+
+func rename(args []Value) Value {
+	if len(args) != 2 {
+		return Value{typ: "error", str: "RENAME takes 2 arguments"}
+	}
+
+	key := args[0].bulk
+	nkey := args[1].bulk
+
+	SETsMu.Lock()
+	SETs[nkey] = SETs[key]
+	delete(SETs, key)
+	SETsMu.Unlock()
+
+	return Value{typ: "string", str: "OK"}
+}
 
 func set(args []Value) Value {
 	if len(args) != 2 {
