@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -10,11 +11,11 @@ import (
 var Handlers = map[string]func([]Value) Value{
 	"APPEND":  append_set,
 	"COMMAND": command,
-	// "DECR": decr,
-	// "DECRBY": decrby,
-	"DEL":    del,
-	"GET":    get,
-	"GETDEL": getdel,
+	"DECR":    decr,
+	"DECRBY":  decrby,
+	"DEL":     del,
+	"GET":     get,
+	"GETDEL":  getdel,
 	// "GETRANGE": getrange,
 	"ECHO":   echo,
 	"EXISTS": exists,
@@ -101,6 +102,53 @@ func append_set(args []Value) Value {
 	SETsMu.Unlock()
 
 	return Value{typ: "string", str: "OK"}
+}
+
+func decr(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "DECR takes 1 argument"}
+	}
+
+	key := args[0].bulk
+	var value int
+
+	SETsMu.Lock()
+	if val, err := strconv.Atoi(SETs[key]); err != nil {
+		return Value{typ: "error", str: "Value is not an integer"}
+	} else {
+		value = val - 1
+		SETs[key] = strconv.Itoa(value)
+	}
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: value}
+}
+
+func decrby(args []Value) Value {
+	if len(args) != 2 {
+		return Value{typ: "error", str: "DECRBY takes 2 arguments"}
+	}
+
+	key := args[0].bulk
+	var dval int
+	var value int
+
+	if decrby, err := strconv.Atoi(args[1].bulk); err != nil {
+		return Value{typ: "error", str: "Decrement value is not an integer"}
+	} else {
+		dval = decrby
+	}
+
+	SETsMu.Lock()
+	if val, err := strconv.Atoi(SETs[key]); err != nil {
+		return Value{typ: "error", str: "Value is not an integer"}
+	} else {
+		value = val - dval
+		SETs[key] = strconv.Itoa(value)
+	}
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: value}
 }
 
 func get(args []Value) Value {
