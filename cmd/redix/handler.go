@@ -9,16 +9,16 @@ import (
 // handlers for setting accepted commands (https://redis.io/docs/latest/commands/)
 
 var Handlers = map[string]func([]Value) Value{
-	"APPEND":  append_set,
-	"COMMAND": command,
-	"DECR":    decr,
-	"DECRBY":  decrby,
-	"DEL":     del,
-	"GET":     get,
-	"GETDEL":  getdel,
-	// "GETRANGE": getrange,
-	"ECHO":   echo,
-	"EXISTS": exists,
+	"APPEND":   append_set,
+	"COMMAND":  command,
+	"DECR":     decr,
+	"DECRBY":   decrby,
+	"DEL":      del,
+	"GET":      get,
+	"GETDEL":   getdel,
+	"GETRANGE": getrange,
+	"ECHO":     echo,
+	"EXISTS":   exists,
 	// "HDEL":    hdel,
 	// "HEXISTS": hexists,
 	"HSET":    hset,
@@ -214,6 +214,28 @@ func getdel(args []Value) Value {
 	SETsMu.Unlock()
 
 	return Value{typ: "string", str: value}
+}
+
+func getrange(args []Value) Value {
+	if len(args) != 3 {
+		return Value{typ: "error", str: "GETRANGE takes 3 arguments (key, start, end)"}
+	}
+
+	var ret string
+	key := args[0].bulk
+	start, _ := strconv.Atoi(args[1].bulk)
+	end, _ := strconv.Atoi(args[2].bulk)
+
+	SETsMu.RLock()
+	if end == -1 {
+		len := len(SETs[key])
+		ret = SETs[key][start:len]
+	} else {
+		ret = SETs[key][start:end]
+	}
+	SETsMu.RUnlock()
+
+	return Value{typ: "string", str: ret}
 }
 
 func del(args []Value) Value {
