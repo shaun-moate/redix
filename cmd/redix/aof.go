@@ -49,7 +49,7 @@ func (aof *Aof) Close() error {
 
 func isWriteCommand(command string) bool {
 	switch command {
-	case "SET", "APPEND", "HSET", "DECR", "DECRBY":
+	case "SET", "APPEND", "HSET", "DECR", "DECRBY", "INCR", "INCRBY":
 		return true
 	default:
 		return false

@@ -27,8 +27,8 @@ var Handlers = map[string]func([]Value) Value{
 	// "HINCRBY": hincrby,
 	// "HKEYS":   hkeys,
 	// "HSTRLEN": hstrlen,
-	// "INCR":    incr,
-	// "INCRBY":  incrby,
+	"INCR":   incr,
+	"INCRBY": incrby,
 	// "KEYS": keys,
 	"RENAME": rename,
 	"SET":    set,
@@ -110,15 +110,10 @@ func decr(args []Value) Value {
 	}
 
 	key := args[0].bulk
-	var value int
 
 	SETsMu.Lock()
-	if val, err := strconv.Atoi(SETs[key]); err != nil {
-		return Value{typ: "error", str: "Value is not an integer"}
-	} else {
-		value = val - 1
-		SETs[key] = strconv.Itoa(value)
-	}
+	value, _ := incStringInt(SETs[key], -1)
+	SETs[key] = strconv.Itoa(value)
 	SETsMu.Unlock()
 
 	return Value{typ: "integer", int: value}
@@ -131,7 +126,6 @@ func decrby(args []Value) Value {
 
 	key := args[0].bulk
 	var dval int
-	var value int
 
 	if decrby, err := strconv.Atoi(args[1].bulk); err != nil {
 		return Value{typ: "error", str: "Decrement value is not an integer"}
@@ -140,12 +134,45 @@ func decrby(args []Value) Value {
 	}
 
 	SETsMu.Lock()
-	if val, err := strconv.Atoi(SETs[key]); err != nil {
-		return Value{typ: "error", str: "Value is not an integer"}
-	} else {
-		value = val - dval
-		SETs[key] = strconv.Itoa(value)
+	value, _ := incStringInt(SETs[key], -dval)
+	SETs[key] = strconv.Itoa(value)
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: value}
+}
+
+func incr(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "INCR takes 1 argument"}
 	}
+
+	key := args[0].bulk
+
+	SETsMu.Lock()
+	value, _ := incStringInt(SETs[key], 1)
+	SETs[key] = strconv.Itoa(value)
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: value}
+}
+
+func incrby(args []Value) Value {
+	if len(args) != 2 {
+		return Value{typ: "error", str: "INCRBY takes 2 arguments"}
+	}
+
+	key := args[0].bulk
+	var ival int
+
+	if incrby, err := strconv.Atoi(args[1].bulk); err != nil {
+		return Value{typ: "error", str: "Increment value is not an integer"}
+	} else {
+		ival = incrby
+	}
+
+	SETsMu.Lock()
+	value, _ := incStringInt(SETs[key], ival)
+	SETs[key] = strconv.Itoa(value)
 	SETsMu.Unlock()
 
 	return Value{typ: "integer", int: value}
