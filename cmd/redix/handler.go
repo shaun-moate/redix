@@ -19,7 +19,7 @@ var Handlers = map[string]func([]Value) Value{
 	"GETRANGE": getrange,
 	"ECHO":     echo,
 	"EXISTS":   exists,
-	// "HDEL":    hdel,
+	"HDEL":     hdel,
 	// "HEXISTS": hexists,
 	"HSET":    hset,
 	"HGET":    hget,
@@ -331,4 +331,27 @@ func hgetall(args []Value) Value {
 	}
 
 	return Value{typ: "array", array: values}
+}
+
+func hdel(args []Value) Value {
+	if len(args) != 2 {
+		return Value{typ: "error", str: "HDEL requires 2 arguments (hash, key)"}
+	}
+
+	var count int
+	hash := args[0].bulk
+
+	HSETsMu.Lock()
+	set := HSETs[hash]
+	for i := 1; i < len(args); i++ {
+		key := args[i].bulk
+		if _, ok := set[key]; ok {
+			delete(set, key)
+			count++
+		}
+	}
+	HSETs[hash] = set
+	HSETsMu.Unlock()
+
+	return Value{typ: "integer", int: count}
 }
