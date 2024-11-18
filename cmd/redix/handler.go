@@ -30,6 +30,7 @@ var Handlers = map[string]func([]Value) Value{
 	"INCR":   incr,
 	"INCRBY": incrby,
 	// "KEYS": keys,
+	"MSET":   mset,
 	"RENAME": rename,
 	"SET":    set,
 	"PING":   ping,
@@ -266,6 +267,23 @@ func exists(args []Value) Value {
 	SETsMu.RUnlock()
 
 	return Value{typ: "integer", int: count}
+}
+
+func mset(args []Value) Value {
+	if len(args)%2 != 0 {
+		return Value{typ: "error", str: "MSET takes an even number of arguments"}
+	}
+
+	SETsMu.Lock()
+	for i := 0; i < len(args); i += 2 {
+		key := args[i].bulk
+		value := args[i+1].bulk
+
+		SETs[key] = value
+	}
+	SETsMu.Unlock()
+
+	return Value{typ: "string", str: "OK"}
 }
 
 var HSETs = map[string]map[string]string{}
