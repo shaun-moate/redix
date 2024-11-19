@@ -30,9 +30,10 @@ var Handlers = map[string]func([]Value) Value{
 	"INCR":   incr,
 	"INCRBY": incrby,
 	// "KEYS": keys,
-	"MGET": mget,
-	"MSET": mset,
-	// "MSETNX": msetnx,
+	// "LCS": lcs,
+	"MGET":   mget,
+	"MSET":   mset,
+	"MSETNX": msetnx,
 	"RENAME": rename,
 	"SET":    set,
 	// "SETRANGE": setrange,
@@ -307,6 +308,31 @@ func mset(args []Value) Value {
 	SETsMu.Unlock()
 
 	return Value{typ: "string", str: "OK"}
+}
+
+func msetnx(args []Value) Value {
+	if len(args)%2 != 0 {
+		return Value{typ: "error", str: "MSETNX takes an even number of arguments"}
+	}
+
+	SETsMu.RLock()
+	for i := 0; i < len(args); i += 2 {
+		key := args[i].bulk
+		if _, ok := SETs[key]; ok {
+			return Value{typ: "integer", int: 0}
+		}
+	}
+	SETsMu.RUnlock()
+
+	SETsMu.Lock()
+	for i := 0; i < len(args); i += 2 {
+		key := args[i].bulk
+		value := args[i+1].bulk
+		SETs[key] = value
+	}
+	SETsMu.Unlock()
+
+	return Value{typ: "integer", int: 1}
 }
 
 var HSETs = map[string]map[string]string{}
