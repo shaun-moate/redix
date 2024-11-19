@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+
+	"github.com/gobwas/glob"
 )
 
 // handlers for setting accepted commands (https://redis.io/docs/latest/commands/)
@@ -24,21 +26,21 @@ var Handlers = map[string]func([]Value) Value{
 	"HSET":     hset,
 	"HGET":     hget,
 	"HGETALL":  hgetall,
+	"INCR":     incr,
+	"INCRBY":   incrby,
+	"KEYS":     keys,
+	"MGET":     mget,
+	"MSET":     mset,
+	"MSETNX":   msetnx,
+	"RENAME":   rename,
+	"SET":      set,
+	"PING":     ping,
 	// "HINCRBY": hincrby,
 	// "HKEYS":   hkeys,
 	// "HSTRLEN": hstrlen,
-	"INCR":   incr,
-	"INCRBY": incrby,
-	// "KEYS": keys,
 	// "LCS": lcs,
-	"MGET":   mget,
-	"MSET":   mset,
-	"MSETNX": msetnx,
-	"RENAME": rename,
-	"SET":    set,
 	// "SETRANGE": setrange,
 	// "STRLEN": strlen,
-	"PING": ping,
 }
 
 func command(args []Value) Value {
@@ -272,6 +274,26 @@ func exists(args []Value) Value {
 	SETsMu.RUnlock()
 
 	return Value{typ: "integer", int: count}
+}
+
+func keys(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "KEYS takes 1 argument (glob string)"}
+	}
+
+	var ret []Value
+	var g glob.Glob
+	g = glob.MustCompile(args[0].bulk)
+
+	SETsMu.RLock()
+	for k := range SETs {
+		if ok := g.Match(k); ok {
+			ret = append(ret, Value{typ: "string", str: k})
+		}
+	}
+	SETsMu.RUnlock()
+
+	return Value{typ: "array", array: ret}
 }
 
 func mget(args []Value) Value {
