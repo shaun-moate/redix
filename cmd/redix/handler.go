@@ -30,10 +30,14 @@ var Handlers = map[string]func([]Value) Value{
 	"INCR":   incr,
 	"INCRBY": incrby,
 	// "KEYS": keys,
-	"MSET":   mset,
+	"MGET": mget,
+	"MSET": mset,
+	// "MSETNX": msetnx,
 	"RENAME": rename,
 	"SET":    set,
-	"PING":   ping,
+	// "SETRANGE": setrange,
+	// "STRLEN": strlen,
+	"PING": ping,
 }
 
 func command(args []Value) Value {
@@ -267,6 +271,25 @@ func exists(args []Value) Value {
 	SETsMu.RUnlock()
 
 	return Value{typ: "integer", int: count}
+}
+
+func mget(args []Value) Value {
+	if len(args) == 0 {
+		return Value{typ: "error", str: "MGET takes at least 1 argument"}
+	}
+
+	var ret []Value
+
+	SETsMu.RLock()
+	for i := 0; i < len(args); i++ {
+		key := args[i].bulk
+		if val, ok := SETs[key]; ok {
+			ret = append(ret, Value{typ: "string", str: val})
+		}
+	}
+	SETsMu.RUnlock()
+
+	return Value{typ: "array", array: ret}
 }
 
 func mset(args []Value) Value {
